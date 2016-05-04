@@ -34,7 +34,7 @@ bool isSerialInputComplete = false;
 
 void setup() {
   // Open serial communications and wait for port to open:
-  Serial.begin(9600);
+  Serial.begin(57600);
   while (!Serial) {
     delay(1); // wait for serial port to connect. Needed for native USB port only
   }
@@ -113,47 +113,30 @@ void serialEvent() {
 
 int serialInputHandler() {
   if (isSerialInputComplete) {
-    int serialRequestasInt = atoi(serialRequest);
     
     Serial.print("SERIAL: ");
     Serial.print(serialRequest);
-    Serial.print(" / ");
-    Serial.print(serialRequestasInt);
     Serial.println( );
-    
-    int serialKeypress;
-    
-    if (serialRequestasInt <= 0) {
-      serialKeypress = multiVarHandler(serialRequest);
-    } else {
-      serialKeypress = serialRequestasInt;
+
+    char modeArray[4] = {serialRequest[0], serialRequest[1], serialRequest[2]};
+    char var1Array[4] = {serialRequest[3], serialRequest[4], serialRequest[5]};
+    char var2Array[4] = {serialRequest[6], serialRequest[7], serialRequest[8]};
+    char var3Array[4] = {serialRequest[9], serialRequest[10], serialRequest[11]};
+  
+    int mode = atoi(modeArray);
+    int var1 = atoi(var1Array);
+    int var2 = atoi(var2Array);
+    int var3 = atoi(var3Array);
+
+    if (var1 || var2 || var3) {
+      setColorVals(var1, var2, var3);
     }
 
     memset(serialRequest,0,sizeof(serialRequest));
     isSerialInputComplete = false;
 
-    return serialKeypress;
+    return mode;
   }
-}
-
-int multiVarHandler(char serialMVInput[ ]) {
-  char modeArray[4] = {serialMVInput[0], serialMVInput[1], serialMVInput[2]};
-  char var1Array[4] = {serialMVInput[3], serialMVInput[4], serialMVInput[5]};
-  char var2Array[4] = {serialMVInput[6], serialMVInput[7], serialMVInput[8]};
-  char var3Array[4] = {serialMVInput[9], serialMVInput[10], serialMVInput[11]};
-
-  int mode = atoi(modeArray);
-  int var1 = atoi(var1Array);
-  int var2 = atoi(var2Array);
-  int var3 = atoi(var3Array);
-
-  switch (mode) {
-    case 100:
-      setColorVals(var1, var2, var3);
-      break;
-  }
-
-  return mode;
 }
 
 bool keyPressManager() {
@@ -182,7 +165,7 @@ bool keyPressManager() {
   }
 }
 
-char modeKeyPresses[7] = {1, 2, 4, 5, 13, 14, 15};
+char modeKeyPresses[8] = {1, 2, 4, 5, 13, 14, 15, 100};
 
 bool isModeKeyPress(char keyPress) {
   for (int i = 0; i < sizeof(modeKeyPresses); i++) {
@@ -211,6 +194,7 @@ void changeManager() {
 void modeManager(int keyPress) {
   switch (keyPress) {
     // First Row
+    case 100:
     case 1:
       lightsMode = keyPress;
       rgb(rVal, gVal, bVal); // Solid Color
