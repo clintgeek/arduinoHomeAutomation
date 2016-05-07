@@ -1,4 +1,3 @@
-#include <Adafruit_SleepyDog.h>
 #include <Keypad.h>
 
 // Configure Hardware
@@ -18,7 +17,7 @@ char charKeys[ROWS][COLS] = {
 };
 byte rowPins[ROWS] = {13, 12, 8, 7};
 byte colPins[COLS] = {5, 4, 3};
-Keypad kpd = Keypad( makeKeymap(charKeys), rowPins, colPins, ROWS, COLS);
+Keypad kpd = Keypad(makeKeymap(charKeys), rowPins, colPins, ROWS, COLS);
 
 // Initialize Variables
 int rVal = 0;
@@ -41,12 +40,7 @@ void setup() {
 
   Serial.println("\nArduino Booting...");
 
-  pinMode(fOutPin, OUTPUT);
-  digitalWrite(fOutPin, LOW);
-
   powerOnSelfTest();
-
-  Watchdog.enable(4000);
 
   Serial.println("\nArduino Ready!");
   Serial.println();
@@ -97,23 +91,27 @@ int keyPadMonitor() {
 
 void serialEvent() {
   int i = 0;
-  while (Serial.available()) {
-    char inChar = Serial.read();
-
-    if (isDigit(inChar)) {
-      serialRequest[i] = inChar;
-      i++;
-    }
-
-    if (inChar == '\n') {
-      isSerialInputComplete = true;
+  
+  if (Serial.available()) {
+    while (true) {
+      char inChar = Serial.read();
+  
+      if (isDigit(inChar)) {
+        serialRequest[i] = inChar;
+        i++;
+      }
+  
+      if (inChar == '\n') {
+        isSerialInputComplete = true;
+        break;
+      }
     }
   }
 }
 
 int serialInputHandler() {
   if (isSerialInputComplete) {
-    
+
     Serial.print("SERIAL: ");
     Serial.print(serialRequest);
     Serial.println( );
@@ -122,7 +120,7 @@ int serialInputHandler() {
     char var1Array[4] = {serialRequest[3], serialRequest[4], serialRequest[5]};
     char var2Array[4] = {serialRequest[6], serialRequest[7], serialRequest[8]};
     char var3Array[4] = {serialRequest[9], serialRequest[10], serialRequest[11]};
-  
+
     int mode = atoi(modeArray);
     int var1 = atoi(var1Array);
     int var2 = atoi(var2Array);
@@ -132,7 +130,7 @@ int serialInputHandler() {
       setColorVals(var1, var2, var3);
     }
 
-    memset(serialRequest,0,sizeof(serialRequest));
+    memset(serialRequest, 0, sizeof(serialRequest));
     isSerialInputComplete = false;
 
     return mode;
@@ -143,9 +141,16 @@ bool keyPressManager() {
   int manualKeyPress = keyPadMonitor();
   int serialKeyPress = serialInputHandler();
 
-  Watchdog.reset();
+//  int keyPress = manualKeyPress ? manualKeyPress : serialKeyPress;
 
-  int keyPress = manualKeyPress ? manualKeyPress : serialKeyPress;
+  int keyPress;
+  if (manualKeyPress) {
+    keyPress = manualKeyPress;
+  } else if (serialKeyPress) {
+    keyPress = serialKeyPress;
+  } else {
+    keyPress = false;
+  }
 
   if (keyPress) {
     Serial.print("PROCESSED: ");
@@ -327,10 +332,14 @@ int adjustBrightness(int brightness, char direction) {
   if (direction == 'u') {
     if (brightness <= 245) {
       brightness = brightness + 10;
+    } else {
+      brightness = 255;
     }
   } else {
     if (brightness >= 10) {
       brightness = brightness - 10;
+    } else {
+      brightness = 0;
     }
   }
   return brightness;
