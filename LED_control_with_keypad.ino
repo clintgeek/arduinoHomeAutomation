@@ -140,14 +140,16 @@ int serialInputHandler() {
 bool keyPressManager() {
   int manualKeyPress = keyPadMonitor();
   int serialKeyPress = serialInputHandler();
-
-//  int keyPress = manualKeyPress ? manualKeyPress : serialKeyPress;
-
   int keyPress;
+  
   if (manualKeyPress) {
     keyPress = manualKeyPress;
+    Serial.print("PROCESSING: keypad");
+    Serial.println();
   } else if (serialKeyPress) {
     keyPress = serialKeyPress;
+    Serial.print("PROCESSING: serial");
+    Serial.println();
   } else {
     keyPress = false;
   }
@@ -190,104 +192,17 @@ bool changeDetected() {
 
 void changeManager() {
   if (keyPadRequest != lightsMode) {
+    Serial.println("MODE CHANGE DETECTED:");
+    Serial.print("keyPadRequest: ");
+    Serial.println(keyPadRequest);
+    Serial.print("lightsMode: ");
+    Serial.println(lightsMode);
+    Serial.println();
+
     modeManager(keyPadRequest);
   } else {
     modeManager(lightsMode);
   }
-}
-
-void modeManager(int keyPress) {
-  switch (keyPress) {
-    // First Row
-    case 100:
-    case 1:
-      lightsMode = keyPress;
-      rgb(rVal, gVal, bVal); // Solid Color
-      break;
-    case 2:
-      lightsMode = keyPress;
-      breatheMode(false); // Single Color Breathe
-      break;
-    case 3:
-      lightsMode = ' ';
-      keyPadRequest = ' ';
-      rgb(0, 0, 0); // Lights Off
-      break;
-    // Second Row
-    case 4:
-      lightsMode = keyPress;
-      fadeMode(); // RGB Fade
-      break;
-    case 5:
-      lightsMode = keyPress;
-      pinkTurquoiseBreathe();
-      break;
-    case 6:
-      break;
-    // Third Row
-    case 7:
-      adjustColor('r', 'u');
-      break;
-    case 8:
-      adjustColor('g', 'u');
-      break;
-    case 9:
-      adjustColor('b', 'u');
-      break;
-    // Fourth Row
-    case 10:
-      adjustColor('r', 'd');
-      break;
-    case 11:
-      adjustColor('g', 'd');
-      break;
-    case 12:
-      adjustColor('b', 'd');
-      break;
-    // Shifted First Row
-    case 13:
-      lightsMode = keyPress;
-      rgb(255, 197, 143); // White Light
-      break;
-    case 14:
-      lightsMode = keyPress;
-      breatheMode(true); // RGB Breathe
-      break;
-    case 15:
-      lightsMode = ' ';
-      keyPadRequest = ' ';
-      rgb(0, 0, 0); // Lights Off
-      break;
-    // Shifted Second Row
-    case 16:
-      break;
-    case 17:
-      break;
-    case 18:
-      break;
-    // Shifted Third Row
-    case 19:
-      rVal = 255;
-      break;
-    case 20:
-      gVal = 255;
-      break;
-    case 21:
-      bVal = 255;
-      break;
-    // Shifted Fourth Row
-    case 22:
-      rVal = 0;
-      break;
-    case 23:
-      gVal = 0;
-      break;
-    case 24:
-      bVal = 0;
-      break;
-  }
-
-  abortNow = false;
 }
 
 void rgb(int r, int g, int b) {
@@ -345,67 +260,6 @@ int adjustBrightness(int brightness, char direction) {
   return brightness;
 }
 
-void fadeMode() {
-  unsigned int rgbColor[3];
-
-  // Start off with red.
-  rgbColor[0] = 255;
-  rgbColor[1] = 0;
-  rgbColor[2] = 0;
-
-  // Choose the colors to increment and decrement.
-  for (int decColor = 0; decColor < 3; decColor += 1) {
-    int incColor = decColor == 2 ? 0 : decColor + 1;
-
-    if (changeDetected()) {
-      abortNow = true;
-      break;
-    }
-
-    // cross-fade the two colors.
-    for (int i = 0; i < 255; i += 1) {
-      if (changeDetected()) {
-        abortNow = true;
-        break;
-      }
-
-      rgbColor[decColor] -= 1;
-      rgbColor[incColor] += 1;
-
-      rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
-      delay(changeSpeed);
-    }
-  }
-}
-
-void breatheMode(bool rgbBreathe) {
-  int color;
-
-  if (rgbBreathe) {
-    for (color = 0; color < 3; color++) {
-      if (changeDetected()) {
-        abortNow = true;
-        break;
-      }
-
-      breatheIn(color);
-      if (changeDetected()) {
-        abortNow = true;
-        break;
-      }
-      breatheOut(color);
-    }
-  } else {
-    color = primaryColor();
-    if (!changeDetected()) {
-      breatheIn(color);
-    }
-    if (!changeDetected()) {
-      breatheOut(color);
-    }
-  }
-}
-
 int primaryColor() {
   int primaryColor;
   if (rVal > gVal && rVal > bVal) {
@@ -418,115 +272,3 @@ int primaryColor() {
 
   return primaryColor;
 }
-
-void breatheIn(int color) {
-  unsigned int rgbColor[3];
-
-  rgbColor[0] = 0;
-  rgbColor[1] = 0;
-  rgbColor[2] = 0;
-
-  for (int brightness = 0; brightness <= 255; brightness++) {
-    if (changeDetected()) {
-      abortNow = true;
-      break;
-    }
-
-    rgbColor[color] = brightness;
-
-    rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
-    delay(changeSpeed);
-  }
-}
-
-void breatheOut(int color) {
-  unsigned int rgbColor[3];
-
-  rgbColor[0] = 0;
-  rgbColor[1] = 0;
-  rgbColor[2] = 0;
-
-  rgbColor[color] = 255;
-
-  for (int brightness = 255; brightness >= 1; brightness--) {
-    if (changeDetected()) {
-      abortNow = true;
-      break;
-    }
-
-    rgbColor[color] = brightness;
-
-    rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
-    delay(changeSpeed);
-  }
-}
-
-void pinkTurquoiseBreathe() {
-  breathePink();
-  breatheTurquoise();
-}
-
-void breathePink() {
-  int brightness[3] = {0, 0, 0};
-
-  for (int i = 0; i < 50; i++) {
-    if (changeDetected()) {
-      abortNow = true;
-      break;
-    }
-
-    brightness[0] += 4;
-    brightness[1] += 0;
-    brightness[2] += 1;
-
-    rgb(brightness[0], brightness[1], brightness[2]);
-    delay(50);
-  }
-
-  for (int i = 0; i < 50; i++) {
-    if (changeDetected()) {
-      abortNow = true;
-      break;
-    }
-
-    brightness[0] -= 4;
-    brightness[1] -= 0;
-    brightness[2] -= 1;
-
-    rgb(brightness[0], brightness[1], brightness[2]);
-    delay(50);
-  }
-}
-
-void breatheTurquoise() {
-  int brightness[3] = {0, 0, 0};
-
-  for (int i = 0; i < 50; i++) {
-    if (changeDetected()) {
-      abortNow = true;
-      break;
-    }
-
-    brightness[0] += 0;
-    brightness[1] += 4;
-    brightness[2] += 4;
-
-    rgb(brightness[0], brightness[1], brightness[2]);
-    delay(50);
-  }
-
-  for (int i = 0; i < 50; i++) {
-    if (changeDetected()) {
-      abortNow = true;
-      break;
-    }
-
-    brightness[0] -= 0;
-    brightness[1] -= 4;
-    brightness[2] -= 4;
-
-    rgb(brightness[0], brightness[1], brightness[2]);
-    delay(50);
-  }
-}
-
