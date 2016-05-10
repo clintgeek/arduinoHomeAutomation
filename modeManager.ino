@@ -25,6 +25,8 @@ void modeManager(int keyPress) {
       pinkTurquoiseBreathe();
       break;
     case 6:
+      lightsMode = keyPress;
+      tvMode();
       break;
     // Third Row
     case 7:
@@ -66,6 +68,8 @@ void modeManager(int keyPress) {
     case 17:
       break;
     case 18:
+      lightsMode = keyPress;
+      flickerMode();
       break;
     // Shifted Third Row
     case 19:

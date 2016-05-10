@@ -15,7 +15,7 @@ char charKeys[ROWS][COLS] = {
   { 7, 8, 9 },
   { 10, 11, 12 }
 };
-byte rowPins[ROWS] = {13, 12, 8, 7};
+byte rowPins[ROWS] = {12, 8, 7, 6};
 byte colPins[COLS] = {5, 4, 3};
 Keypad kpd = Keypad(makeKeymap(charKeys), rowPins, colPins, ROWS, COLS);
 
@@ -52,8 +52,7 @@ void loop() {
 }
 
 int keyPadMonitor() {
-  if (kpd.getKeys())
-  {
+  if (kpd.getKeys()) {
     for (int i = 0; i < LIST_MAX; i++) // Scan the whole key list.
     {
       if ( kpd.key[i].stateChanged )   // Only find keys that have changed state.
@@ -82,6 +81,12 @@ int keyPadMonitor() {
             }
             break;
           case IDLE:
+            Serial.println("KEYPAD IDLE");
+            Serial.println( );
+            break;
+          default:
+            Serial.println("KEYPAD DEFAULT");
+            Serial.println( );
             break;
         }
       }
@@ -142,7 +147,7 @@ bool keyPressManager() {
   int serialKeyPress = serialInputHandler();
   int keyPress;
   
-  if (manualKeyPress) {
+  if (manualKeyPress && manualKeyPress != 512) {
     keyPress = manualKeyPress;
     Serial.print("PROCESSING: keypad");
     Serial.println();
@@ -172,7 +177,7 @@ bool keyPressManager() {
   }
 }
 
-char modeKeyPresses[8] = {1, 2, 4, 5, 13, 14, 15, 100};
+char modeKeyPresses[10] = {1, 2, 4, 5, 6, 13, 14, 15, 18, 100};
 
 bool isModeKeyPress(char keyPress) {
   for (int i = 0; i < sizeof(modeKeyPresses); i++) {
@@ -209,6 +214,24 @@ void rgb(int r, int g, int b) {
   analogWrite(rOutPin, r);
   analogWrite(gOutPin, g);
   analogWrite(bOutPin, b);
+}
+
+void setSingleColor(int colorIndex, int brightness) {
+  int outPin;
+
+  switch(colorIndex) {
+    case 0:
+      outPin = rOutPin;
+      break;
+    case 1:
+      outPin = gOutPin;
+      break;
+    case 2:
+      outPin = bOutPin;
+      break;
+  }
+  
+  analogWrite(outPin, brightness);
 }
 
 void setColorVals(int r, int g, int b) {
@@ -272,3 +295,17 @@ int primaryColor() {
 
   return primaryColor;
 }
+
+void threadSafeRandomDelay(int min, int max) {
+  int totalDelay = random(min, max);
+  
+  for (int delayCounter = 0; delayCounter < totalDelay; delayCounter++) {
+    if (changeDetected()) {
+      abortNow = true;
+      break;
+    }
+  
+    delay(1);
+  }   
+}
+

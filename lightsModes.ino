@@ -1,3 +1,24 @@
+void tvMode() {  
+  while (!changeDetected()) {
+    int rBrightness = random(0, 255);
+    int gBrightness = random(0, 255);
+    int bBrightness = random(0, 255);
+
+    rgb(rBrightness, gBrightness, bBrightness);
+    threadSafeRandomDelay(250, 1750);
+  }
+}
+
+void flickerMode() {  
+  while (!changeDetected()) {
+    int colorIndex = random(0, 2);
+    int colorBrightness = random(0, 255);
+
+    setSingleColor(colorIndex, colorBrightness);
+    threadSafeRandomDelay(250, 1500);
+  }
+}
+
 void fadeMode() {
   unsigned int rgbColor[3];
 
