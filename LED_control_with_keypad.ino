@@ -29,7 +29,8 @@ int lightsMode;
 int keyPadRequest;
 int changeSpeed = 20;
 char serialRequest[13];
-bool isSerialInputComplete = false;
+bool isSerialInputComplete;
+char modeKeyPresses[10] = {1, 2, 4, 5, 6, 13, 14, 18, 100};
 
 void setup() {
   // Open serial communications and wait for port to open:
@@ -40,6 +41,7 @@ void setup() {
 
   Serial.println("\nArduino Booting...");
 
+  randomSeed(analogRead(0));
   powerOnSelfTest();
 
   Serial.println("\nArduino Ready!");
@@ -51,7 +53,70 @@ void loop() {
   changeManager();
 }
 
-int keyPadMonitor() {
+bool keyPressManager() { // checks for key or serial input and kicks off change request
+  int manualKeyPress = keyPadMonitor();
+  int serialKeyPress = serialInputHandler();
+  int keyPress;
+
+  if (manualKeyPress) {
+    keyPress = manualKeyPress;
+    Serial.println("PROCESSING: keypad");
+    Serial.println();
+  } else if (serialKeyPress) {
+    keyPress = serialKeyPress;
+    Serial.print("PROCESSING: serial");
+    Serial.println();
+  } else {
+    return false;
+  }
+
+  if (keyPress) {
+    Serial.print("PROCESSED: ");
+    Serial.println(keyPress);
+    Serial.println( );
+
+    if (isModeKeyPress(keyPress)) { // catch mode changes
+      keyPadRequest = keyPress;
+      changeManager();
+    } else {
+      modeManager(keyPress);
+    }
+    return true;
+  }
+}
+
+bool isModeKeyPress(char keyPress) { // checks for mode changes as opposed to adjustments
+  for (int i = 0; i < 10; i++) {
+    if (modeKeyPresses[i] == keyPress) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void changeManager() { // allows pass through of adjustments and sets flags for mode changes
+  if (keyPadRequest != lightsMode) {
+    Serial.println("MODE CHANGE DETECTED:");
+    Serial.print("keyPadRequest: ");
+    Serial.println(keyPadRequest);
+    Serial.print("lightsMode: ");
+    Serial.println(lightsMode);
+    Serial.println();
+
+    modeManager(keyPadRequest);
+  } else {
+    modeManager(lightsMode);
+  }
+}
+
+bool changeDetected() {  // sets abort conditions for infinite loop modes
+  bool requestAbort = (keyPadRequest != lightsMode);
+  bool serialChange = (Serial.peek() != -1);
+
+  return (abortNow || requestAbort || keyPressManager() || serialChange);
+}
+
+int keyPadMonitor() { // reads keypad library and applies shift to held keys
   if (kpd.getKeys()) {
     for (int i = 0; i < LIST_MAX; i++) // Scan the whole key list.
     {
@@ -81,12 +146,10 @@ int keyPadMonitor() {
             }
             break;
           case IDLE:
-            Serial.println("KEYPAD IDLE");
-            Serial.println( );
+            return 0;
             break;
           default:
-            Serial.println("KEYPAD DEFAULT");
-            Serial.println( );
+            return 0;
             break;
         }
       }
@@ -94,18 +157,18 @@ int keyPadMonitor() {
   }
 }
 
-void serialEvent() {
+void serialEvent() { // where the hell is this called from?
   int i = 0;
-  
+
   if (Serial.available()) {
     while (true) {
       char inChar = Serial.read();
-  
+
       if (isDigit(inChar)) {
         serialRequest[i] = inChar;
         i++;
       }
-  
+
       if (inChar == '\n') {
         isSerialInputComplete = true;
         break;
@@ -114,7 +177,7 @@ void serialEvent() {
   }
 }
 
-int serialInputHandler() {
+int serialInputHandler() { // breaks down incoming serial data into usable variables and applies them
   if (isSerialInputComplete) {
 
     Serial.print("SERIAL: ");
@@ -142,74 +205,6 @@ int serialInputHandler() {
   }
 }
 
-bool keyPressManager() {
-  int manualKeyPress = keyPadMonitor();
-  int serialKeyPress = serialInputHandler();
-  int keyPress;
-  
-  if (manualKeyPress && manualKeyPress != 512) {
-    keyPress = manualKeyPress;
-    Serial.print("PROCESSING: keypad");
-    Serial.println();
-  } else if (serialKeyPress) {
-    keyPress = serialKeyPress;
-    Serial.print("PROCESSING: serial");
-    Serial.println();
-  } else {
-    keyPress = false;
-  }
-
-  if (keyPress) {
-    Serial.print("PROCESSED: ");
-    Serial.print(keyPress);
-    Serial.println( );
-    Serial.println( );
-
-    if (isModeKeyPress(keyPress)) { // catch mode changes
-      keyPadRequest = keyPress;
-      changeManager();
-    } else {
-      modeManager(keyPress);
-    }
-    return true;
-  } else {
-    return false;
-  }
-}
-
-char modeKeyPresses[10] = {1, 2, 4, 5, 6, 13, 14, 15, 18, 100};
-
-bool isModeKeyPress(char keyPress) {
-  for (int i = 0; i < sizeof(modeKeyPresses); i++) {
-    if (modeKeyPresses[i] == keyPress) {
-      return true;
-    }
-  }
-  return false;
-}
-
-bool changeDetected() {
-  bool requestAbort = (keyPadRequest != lightsMode);
-  bool serialChange = (Serial.peek() != -1);
-
-  return (abortNow || requestAbort || keyPressManager() || serialChange);
-}
-
-void changeManager() {
-  if (keyPadRequest != lightsMode) {
-    Serial.println("MODE CHANGE DETECTED:");
-    Serial.print("keyPadRequest: ");
-    Serial.println(keyPadRequest);
-    Serial.print("lightsMode: ");
-    Serial.println(lightsMode);
-    Serial.println();
-
-    modeManager(keyPadRequest);
-  } else {
-    modeManager(lightsMode);
-  }
-}
-
 void rgb(int r, int g, int b) {
   analogWrite(rOutPin, r);
   analogWrite(gOutPin, g);
@@ -219,7 +214,7 @@ void rgb(int r, int g, int b) {
 void setSingleColor(int colorIndex, int brightness) {
   int outPin;
 
-  switch(colorIndex) {
+  switch (colorIndex) {
     case 0:
       outPin = rOutPin;
       break;
@@ -230,7 +225,7 @@ void setSingleColor(int colorIndex, int brightness) {
       outPin = bOutPin;
       break;
   }
-  
+
   analogWrite(outPin, brightness);
 }
 
@@ -298,14 +293,31 @@ int primaryColor() {
 
 void threadSafeRandomDelay(int min, int max) {
   int totalDelay = random(min, max);
-  
+
   for (int delayCounter = 0; delayCounter < totalDelay; delayCounter++) {
     if (changeDetected()) {
       abortNow = true;
       break;
     }
-  
+
     delay(1);
-  }   
+  }
 }
 
+char *uptime() // Function made to millis() be an optional parameter
+{
+  return (char *)uptime(millis()); // call original uptime function with unsigned long millis() value
+}
+
+char *uptime(unsigned long milli)
+{
+  static char _return[32];
+  unsigned long secs = milli / 1000, mins = secs / 60;
+  unsigned int hours = mins / 60, days = hours / 24;
+  milli -= secs * 1000;
+  secs -= mins * 60;
+  mins -= hours * 60;
+  hours -= days * 24;
+  sprintf(_return, "Uptime: %d days %2.2d:%2.2d:%2.2d.%3.3d", (byte)days, (byte)hours, (byte)mins, (byte)secs, (int)milli);
+  return _return;
+}

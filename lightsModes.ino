@@ -1,4 +1,4 @@
-void tvMode() {  
+void tvMode() {
   while (!changeDetected()) {
     int rBrightness = random(0, 255);
     int gBrightness = random(0, 255);
@@ -9,7 +9,7 @@ void tvMode() {
   }
 }
 
-void flickerMode() {  
+void flickerMode() {
   while (!changeDetected()) {
     int colorIndex = random(0, 2);
     int colorBrightness = random(0, 255);
