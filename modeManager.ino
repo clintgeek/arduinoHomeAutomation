@@ -58,9 +58,7 @@ void modeManager(int keyPress) {
       breatheMode(true); // RGB Breathe
       break;
     case 15:
-      lightsMode = ' ';
-      keyPadRequest = ' ';
-      rgb(0, 0, 0); // Lights Off
+      Serial.println(uptime());
       break;
     // Shifted Second Row
     case 16:
@@ -92,6 +90,6 @@ void modeManager(int keyPress) {
       bVal = 0;
       break;
   }
-  
+
   abortNow = false;
 }
