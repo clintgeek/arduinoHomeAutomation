@@ -4,7 +4,6 @@
 int const rOutPin = 11;
 int const gOutPin = 10;
 int const bOutPin = 9;
-int const fOutPin = 6;
 
 // Keypad Setup
 byte const ROWS = 4;
@@ -19,199 +18,108 @@ byte rowPins[ROWS] = {12, 8, 7, 6};
 byte colPins[COLS] = {5, 4, 3};
 Keypad kpd = Keypad(makeKeymap(charKeys), rowPins, colPins, ROWS, COLS);
 
-// Initialize Variables
-int rVal = 0;
-int gVal = 0;
-int bVal = 0;
+// Initialize Global Variables
+int rVal;
+int gVal;
+int bVal;
+int mode;
 int shift;
+int request;
 bool abortNow;
-int lightsMode;
-int keyPadRequest;
-int changeSpeed = 20;
-char serialRequest[13];
-bool isSerialInputComplete;
-char modeKeyPresses[10] = {1, 2, 4, 5, 6, 13, 14, 18, 100};
+
+// Enable/Disable debug output
+bool debug = true;
 
 void setup() {
-  // Open serial communications and wait for port to open:
-  Serial.begin(57600);
-  while (!Serial) {
-    delay(1); // wait for serial port to connect. Needed for native USB port only
+  if (debug) {
+    Serial.begin(57600);
+    while (!Serial) {
+      delay(1); // wait for serial port to connect. Needed for native USB port only
+    }
   }
-
-  Serial.println("\nArduino Booting...");
+  
+  debugPrinter("Arduino Booting...", 0);
 
   randomSeed(analogRead(0));
   powerOnSelfTest();
 
-  Serial.println("\nArduino Ready!");
-  Serial.println();
+  debugPrinter("Arduino Ready!", 1);
 }
 
 void loop() {
-  keyPressManager();
-  changeManager();
+  inputWatcher();
 }
 
-bool keyPressManager() { // checks for key or serial input and kicks off change request
-  int manualKeyPress = keyPadMonitor();
-  int serialKeyPress = serialInputHandler();
-  int keyPress;
-
-  if (manualKeyPress) {
-    keyPress = manualKeyPress;
-    Serial.println("PROCESSING: keypad");
-    Serial.println();
-  } else if (serialKeyPress) {
-    keyPress = serialKeyPress;
-    Serial.print("PROCESSING: serial");
-    Serial.println();
-  } else {
-    return false;
-  }
-
-  if (keyPress) {
-    Serial.print("PROCESSED: ");
-    Serial.println(keyPress);
-    Serial.println( );
-
-    if (isModeKeyPress(keyPress)) { // catch mode changes
-      keyPadRequest = keyPress;
-      changeManager();
-    } else {
-      modeManager(keyPress);
-    }
-    return true;
-  }
+void inputWatcher() {
+  if (kpd.getKeys()) { keypadInputProcessor(); }
 }
 
-bool isModeKeyPress(char keyPress) { // checks for mode changes as opposed to adjustments
-  for (int i = 0; i < 10; i++) {
-    if (modeKeyPresses[i] == keyPress) {
-      return true;
-    }
-  }
-  return false;
-}
-
-void changeManager() { // allows pass through of adjustments and sets flags for mode changes
-  if (keyPadRequest != lightsMode) {
-    Serial.println("MODE CHANGE DETECTED:");
-    Serial.print("keyPadRequest: ");
-    Serial.println(keyPadRequest);
-    Serial.print("lightsMode: ");
-    Serial.println(lightsMode);
-    Serial.println();
-
-    modeManager(keyPadRequest);
-  } else {
-    modeManager(lightsMode);
-  }
-}
-
-bool changeDetected() {  // sets abort conditions for infinite loop modes
-  bool requestAbort = (keyPadRequest != lightsMode);
-  bool serialChange = (Serial.peek() != -1);
-
-  return (abortNow || requestAbort || keyPressManager() || serialChange);
-}
-
-int keyPadMonitor() { // reads keypad library and applies shift to held keys
-  if (kpd.getKeys()) {
-    for (int i = 0; i < LIST_MAX; i++) // Scan the whole key list.
+void keypadInputProcessor() {  
+  for (int i = 0; i < LIST_MAX; i++) // Scan the whole key list.
+  {
+    if ( kpd.key[i].stateChanged )   // Only find keys that have changed state.
     {
-      if ( kpd.key[i].stateChanged )   // Only find keys that have changed state.
+      switch (kpd.key[i].kstate) // Report active key state : IDLE, PRESSED, HOLD, or RELEASED
       {
-        switch (kpd.key[i].kstate) // Report active key state : IDLE, PRESSED, HOLD, or RELEASED
-        {
-          case PRESSED:
-            shift = 1;
-            Serial.print("PRESSED: ");
-            Serial.print(kpd.key[i].kcode + 1);
-            Serial.println( );
-            break;
-          case HOLD:
-            shift = 13;
-            Serial.print("HELD: ");
-            Serial.print(kpd.key[i].kcode + shift);
-            Serial.println( );
-            break;
-          case RELEASED:
-            Serial.print("RELEASED: ");
-            Serial.print(kpd.key[i].kcode + shift);
-            Serial.println( );
-            if ((kpd.key[i].kcode + 1) > 0)
-            {
-              return (kpd.key[i].kcode + shift);
-            }
-            break;
-          case IDLE:
-            return 0;
-            break;
-          default:
-            return 0;
-            break;
-        }
+        case PRESSED:
+          shift = 1;
+          debugPrinter("PRESSED: ", kpd.key[i].kcode + shift, 0);
+          break;
+        case HOLD:
+          shift = 13;
+          debugPrinter("HELD: ", kpd.key[i].kcode + shift, 0);
+          break;
+        case RELEASED:
+          debugPrinter("RELEASED: ", kpd.key[i].kcode + shift, 0);
+          if ((kpd.key[i].kcode + 1) > 0)
+          {
+            inputManager(kpd.key[i].kcode + shift);
+          }
+          break;
+        case IDLE:
+          break;
+        default:
+          break;
       }
     }
   }
 }
 
-void serialEvent() { // where the hell is this called from?
-  int i = 0;
+void inputManager(char input) {
+  abortNow = true;
+  request = input;
 
-  if (Serial.available()) {
-    while (true) {
-      char inChar = Serial.read();
+  debugPrinter("PROCESSED: ", request, 1);
+  
+  modeManager();
+}
 
-      if (isDigit(inChar)) {
-        serialRequest[i] = inChar;
-        i++;
-      }
+  ///////////////////////////////////////////
+ // HELPER FUNCTIONS - MOVE TO OTHER FILE //
+///////////////////////////////////////////
 
-      if (inChar == '\n') {
-        isSerialInputComplete = true;
-        break;
-      }
+void debugPrinter(String title, int blankLines) {
+  if (debug) {
+    Serial.println(title);
+
+    for (int i=0; i < blankLines; i++) {
+      Serial.println();
     }
   }
 }
 
-int serialInputHandler() { // breaks down incoming serial data into usable variables and applies them
-  if (isSerialInputComplete) {
+void debugPrinter(String title, int value, int blankLines) {
+  if (debug) {
+    Serial.print(title);
+    Serial.println(value);
 
-    Serial.print("SERIAL: ");
-    Serial.print(serialRequest);
-    Serial.println( );
-
-    char modeArray[4] = {serialRequest[0], serialRequest[1], serialRequest[2]};
-    char var1Array[4] = {serialRequest[3], serialRequest[4], serialRequest[5]};
-    char var2Array[4] = {serialRequest[6], serialRequest[7], serialRequest[8]};
-    char var3Array[4] = {serialRequest[9], serialRequest[10], serialRequest[11]};
-
-    int mode = atoi(modeArray);
-    int var1 = atoi(var1Array);
-    int var2 = atoi(var2Array);
-    int var3 = atoi(var3Array);
-
-    if (var1 || var2 || var3) {
-      setColorVals(var1, var2, var3);
+    for (int i=0; i < blankLines; i++) {
+      Serial.println();
     }
-
-    memset(serialRequest, 0, sizeof(serialRequest));
-    isSerialInputComplete = false;
-
-    return mode;
   }
 }
 
-void rgb(int r, int g, int b) {
-  analogWrite(rOutPin, r);
-  analogWrite(gOutPin, g);
-  analogWrite(bOutPin, b);
-}
-
-void setSingleColor(int colorIndex, int brightness) {
+void writeSingleColor(int colorIndex, int brightness) {
   int outPin;
 
   switch (colorIndex) {
@@ -229,25 +137,54 @@ void setSingleColor(int colorIndex, int brightness) {
   analogWrite(outPin, brightness);
 }
 
-void setColorVals(int r, int g, int b) {
-  rVal = r;
-  gVal = g;
-  bVal = b;
+void rgb(int r, int g, int b) {
+  writeSingleColor(0, r);
+  writeSingleColor(1, g);
+  writeSingleColor(2, b);
 }
 
-void powerOnSelfTest() {
-  rgb(255, 0, 0);
-  delay(1000);
+void setSingleColor(int colorIndex, int brightness) {
+  switch (colorIndex) {
+    case 0:
+      rVal = brightness;
+      break;
+    case 1:
+      gVal = brightness;
+      break;
+    case 2:
+      bVal = brightness;
+      break;
+  }
+}
 
-  rgb(0, 255, 0);
-  delay(1000);
+void setRgb(int r, int g, int b) {
+  setSingleColor(0, r);
+  setSingleColor(1, g);
+  setSingleColor(2, b);
+}
 
-  rgb(0, 0, 255);
-  delay(1000);
-  rgb(0, 0, 0);
+void threadSafeDelay(int duration) {
+  for (int delayCounter = 0; delayCounter < duration; delayCounter++) {
+    inputWatcher();
+    if (!abortNow) {
+      delay(1);
+    }
+  }
+}
+
+void threadSafeDelay(int min, int max) {
+  int totalDelay = random(min, max);
+
+  for (int delayCounter = 0; delayCounter < totalDelay; delayCounter++) {
+    inputWatcher();
+    if (!abortNow) {
+      delay(1);
+    }
+  }
 }
 
 void adjustColor(char color, char direction) {
+  request = mode;
   switch (color) {
     case 'r':
       rVal = adjustBrightness(rVal, direction);
@@ -262,19 +199,29 @@ void adjustColor(char color, char direction) {
 }
 
 int adjustBrightness(int brightness, char direction) {
-  if (direction == 'u') {
-    if (brightness <= 245) {
-      brightness = brightness + 10;
-    } else {
+  switch (direction) {
+    case 'u':
+      if (brightness <= 245) {
+        brightness = brightness + 10;
+      } else {
+        brightness = 255;
+      }
+      break;
+    case 'd':
+      if (brightness >= 10) {
+        brightness = brightness - 10;
+      } else {
+        brightness = 0;
+      }
+      break;
+    case 'x':
       brightness = 255;
-    }
-  } else {
-    if (brightness >= 10) {
-      brightness = brightness - 10;
-    } else {
+      break;
+    case 'n':
       brightness = 0;
-    }
+      break;
   }
+
   return brightness;
 }
 
@@ -291,33 +238,31 @@ int primaryColor() {
   return primaryColor;
 }
 
-void threadSafeRandomDelay(int min, int max) {
-  int totalDelay = random(min, max);
+void breatheIn(int color) {
+  int rgbColor[3];
+  rgbColor[0] = 0;
+  rgbColor[1] = 0;
+  rgbColor[2] = 0;
 
-  for (int delayCounter = 0; delayCounter < totalDelay; delayCounter++) {
-    if (changeDetected()) {
-      abortNow = true;
-      break;
-    }
-
-    delay(1);
+  for (int brightness = 0; brightness <= 255; brightness++) {
+    if (abortNow) { break; }
+    rgbColor[color] = brightness;
+    rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
+    threadSafeDelay(20);
   }
 }
 
-char *uptime() // Function made to millis() be an optional parameter
-{
-  return (char *)uptime(millis()); // call original uptime function with unsigned long millis() value
-}
+void breatheOut(int color) {
+  int rgbColor[3];
+  rgbColor[0] = 0;
+  rgbColor[1] = 0;
+  rgbColor[2] = 0;
+  rgbColor[color] = 255;
 
-char *uptime(unsigned long milli)
-{
-  static char _return[32];
-  unsigned long secs = milli / 1000, mins = secs / 60;
-  unsigned int hours = mins / 60, days = hours / 24;
-  milli -= secs * 1000;
-  secs -= mins * 60;
-  mins -= hours * 60;
-  hours -= days * 24;
-  sprintf(_return, "Uptime: %d days %2.2d:%2.2d:%2.2d.%3.3d", (byte)days, (byte)hours, (byte)mins, (byte)secs, (int)milli);
-  return _return;
+  for (int brightness = 255; brightness >= 1; brightness--) {
+    if (abortNow) { break; }
+    rgbColor[color] = brightness;
+    rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
+    threadSafeDelay(20);
+  }
 }
