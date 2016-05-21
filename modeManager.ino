@@ -1,31 +1,26 @@
-void modeManager(int keyPress) {
-  switch (keyPress) {
+void modeManager() {
+  abortNow = false;
+  
+  switch (request) {
     // First Row
     case 100:
     case 1:
-      lightsMode = keyPress;
-      rgb(rVal, gVal, bVal); // Solid Color
+      solidColorMode();
       break;
     case 2:
-      lightsMode = keyPress;
-      breatheMode(false); // Single Color Breathe
+      breatheMode();
       break;
     case 3:
-      lightsMode = ' ';
-      keyPadRequest = ' ';
-      rgb(0, 0, 0); // Lights Off
+      allOff();
       break;
     // Second Row
     case 4:
-      lightsMode = keyPress;
-      fadeMode(); // RGB Fade
+      rgbFadeMode();
       break;
     case 5:
-      lightsMode = keyPress;
-      pinkTurquoiseBreathe();
+      pinkTurquoiseBreatheMode();
       break;
     case 6:
-      lightsMode = keyPress;
       tvMode();
       break;
     // Third Row
@@ -50,15 +45,12 @@ void modeManager(int keyPress) {
       break;
     // Shifted First Row
     case 13:
-      lightsMode = keyPress;
-      rgb(255, 197, 143); // White Light
+      solidWhiteMode();
       break;
     case 14:
-      lightsMode = keyPress;
-      breatheMode(true); // RGB Breathe
+      rgbBreatheMode();
       break;
     case 15:
-      Serial.println(uptime());
       break;
     // Shifted Second Row
     case 16:
@@ -66,30 +58,27 @@ void modeManager(int keyPress) {
     case 17:
       break;
     case 18:
-      lightsMode = keyPress;
       flickerMode();
       break;
     // Shifted Third Row
     case 19:
-      rVal = 255;
+      adjustColor('r', 'x');
       break;
     case 20:
-      gVal = 255;
+      adjustColor('g', 'x');
       break;
     case 21:
-      bVal = 255;
+      adjustColor('b', 'x');
       break;
     // Shifted Fourth Row
     case 22:
-      rVal = 0;
+      adjustColor('r', 'n');
       break;
     case 23:
-      gVal = 0;
+      adjustColor('g', 'n');
       break;
     case 24:
-      bVal = 0;
+      adjustColor('b', 'n');
       break;
   }
-
-  abortNow = false;
 }
