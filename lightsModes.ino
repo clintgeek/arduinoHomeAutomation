@@ -158,22 +158,20 @@ void rgbBreatheMode() {
 
 void sunriseMode(int color, int duration) {
   int rgbColor[3];
-
-  unsigned long fadeInMillis = duration * 60 * 1000;
-  int delayDuration = fadeInMillis / 255;
-
+  long fadeInMillis = (duration * 60L * 1000L);
+  int delayDuration = fadeInMillis / 255L;
   rgbColor[0] = 0;
   rgbColor[1] = 0;
   rgbColor[2] = 0;
-
-  for (int brightness = 0; brightness <= 255; brightness++) {
+  
+  for (int brightness = 0; brightness <= 255; brightness++) {    
     if (abortNow) { break; }
-    
+   
     rgbColor[color] = brightness;
     rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
     threadSafeDelay(delayDuration);
   }
-
+ 
   while (!abortNow) {
     threadSafeDelay(10);
   }
@@ -181,10 +179,8 @@ void sunriseMode(int color, int duration) {
 
 void sunsetMode(int color, int duration) {
   int rgbColor[3];
-
-  unsigned long fadeInMillis = duration * 60 * 1000;
+  long fadeInMillis = (duration * 60L * 1000L);
   int delayDuration = fadeInMillis / 255;
-
   rgbColor[0] = 0;
   rgbColor[1] = 0;
   rgbColor[2] = 0;
