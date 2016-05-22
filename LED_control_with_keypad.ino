@@ -28,7 +28,7 @@ int request;
 bool abortNow;
 
 // Enable/Disable debug output
-bool debug = true;
+bool debug = false;
 
 void setup() {
   if (debug) {

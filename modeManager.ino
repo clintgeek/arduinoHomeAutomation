@@ -54,8 +54,10 @@ void modeManager() {
       break;
     // Shifted Second Row
     case 16:
+      sunriseMode(2, 1);
       break;
     case 17:
+      sunsetMode(0, 1);
       break;
     case 18:
       flickerMode();
