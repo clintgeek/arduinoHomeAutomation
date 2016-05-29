@@ -1,9 +1,9 @@
 #include <Keypad.h>
 
 // Configure Hardware
-int const rOutPin = 11;
-int const gOutPin = 10;
-int const bOutPin = 9;
+int const rOutPin = 10;
+int const gOutPin = 9;
+int const bOutPin = 6;
 
 // Keypad Setup
 byte const ROWS = 4;
@@ -14,8 +14,8 @@ char charKeys[ROWS][COLS] = {
   { 7, 8, 9 },
   { 10, 11, 12 }
 };
-byte rowPins[ROWS] = {12, 8, 7, 6};
-byte colPins[COLS] = {5, 4, 3};
+byte rowPins[ROWS] = {A5, A4, A3, A2};
+byte colPins[COLS] = {A1, A0, 2};
 Keypad kpd = Keypad(makeKeymap(charKeys), rowPins, colPins, ROWS, COLS);
 
 // Initialize Global Variables
@@ -39,7 +39,7 @@ void setup() {
   }
   
   debugPrinter("Arduino Booting...", 0);
-
+  
   randomSeed(analogRead(0));
   powerOnSelfTest();
 
