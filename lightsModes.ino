@@ -198,14 +198,15 @@ void sunsetMode(int color, int duration) {
   }
 }
 
-void flickerMode() {
+void danceMode() {
   mode = request;
   while (!abortNow) {
-    int colorIndex = random(0, 2);
-    int colorBrightness = random(0, 255);
+    int rBrightness = random(0, 255);
+    int gBrightness = random(0, 255);
+    int bBrightness = random(0, 255);
 
-    writeSingleColor(colorIndex, colorBrightness);
-    threadSafeDelay(250, 1500);
+    rgb(rBrightness, gBrightness, bBrightness);
+    threadSafeDelay(50, 250);
   }
 }
 

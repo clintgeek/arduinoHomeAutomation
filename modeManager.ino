@@ -60,7 +60,7 @@ void modeManager() {
       sunsetMode(0, 5);
       break;
     case 18:
-      flickerMode();
+      danceMode();
       break;
     // Shifted Third Row
     case 19:
