@@ -8,7 +8,6 @@
 #include <RF24_config.h>
 
 #include <Keypad.h>
-#include <SPI.h>
 
 // Configure Hardware
 int const rOutPin = 10;
@@ -21,10 +20,10 @@ RF24Network network(radio);
 const uint16_t this_node = 01;
 const uint16_t other_node = 00;
 struct payload_t {
-  unsigned char request;
-  unsigned char red;
-  unsigned char green;
-  unsigned char blue;
+  byte mode;
+  byte param1;
+  byte param2;
+  byte param3;
 };
 
 // Keypad Setup
@@ -48,24 +47,24 @@ int mode;
 int shift;
 int request;
 bool abortNow;
+int breatheSpeed = 30;
 
 // Enable/Disable debug output
-bool debug = true;
+bool debug = false;
 
 void setup() {
+  radio.begin();
+  network.begin(/*channel*/ 90, /*node address*/ this_node);
+  
   if (debug) {
-    Serial.begin(57600);
+    Serial.begin(19200);
     while (!Serial) {
-      delay(1); // wait for serial port to connect. Needed for native USB port only
+      delay(5); // wait for serial port to connect. Needed for native USB port only
     }
   }
   
   debugPrinter("Arduino Booting...", 0);
-
-  SPI.begin();
-  radio.begin();
-  network.begin(/*channel*/ 90, /*node address*/ this_node);
-
+  
   randomSeed(analogRead(0));
   powerOnSelfTest();
 
@@ -79,6 +78,7 @@ void loop() {
 void inputWatcher() {
   network.update();
   if (network.available()) { networkInputProcessor(); }
+  if (Serial.available()) { serialInputProcessor(); }
   if (kpd.getKeys()) { keypadInputProcessor(); }
 }
 
@@ -114,25 +114,67 @@ void keypadInputProcessor() {
 }
 
 void networkInputProcessor() {
-  RF24NetworkHeader header;
-  payload_t payload;
-  
-  network.read(header,&payload,sizeof(payload));
-  
-  if (payload.request) { 
-    unsigned char networkRequest = payload.request - 48;
-    unsigned char networkRed = payload.red;
-    unsigned char networkGreen = payload.green;
-    unsigned char networkBlue = payload.blue;
+  while (network.available()) {
+    RF24NetworkHeader header;
+    payload_t payload;
+    
+    network.read(header,&payload,sizeof(payload));
+    
+    if (payload.mode) {   
+      int mode = payload.mode;
+      int param1 = payload.param1;
+      int param2 = payload.param2;
+      int param3 = payload.param3;
+      
+      debugPrinter("Mode: ", mode, 0);
+      debugPrinter("Param1: ", param1, 0);
+      debugPrinter("Param2: ", param2, 0);
+      debugPrinter("Param3: ", param3, 0);
 
-    debugPrinter("rf24Network request: ", networkRequest, 0);
-    debugPrinter("rf24Network red: ", networkRed, 0);
-    debugPrinter("rf24Network green: ", networkGreen, 0);
-    debugPrinter("rf24Networku blue: ", networkBlue, 0);
-
-    if (networkRequest == 1) { setRgb(networkRed, networkGreen, networkBlue); }
-    inputManager(networkRequest); 
+      paramManager(mode, param1, param2, param3);
+    }
   }
+}
+
+void serialInputProcessor() {
+  while (Serial.available()) {
+    int i = 0;
+    char serialRequest[13]; 
+    
+    while (true) {
+      char inChar = Serial.read();
+  
+      if (isDigit(inChar)) {
+        serialRequest[i] = inChar;
+        i++;
+      }
+  
+      if (inChar == '\n') {
+        debugPrinter("serialRequest: ", serialRequest, 1);
+        break;
+      }
+    }
+
+    char modeArray[4] = {serialRequest[0], serialRequest[1], serialRequest[2]};
+    char param1Array[4] = {serialRequest[3], serialRequest[4], serialRequest[5]};
+    char param2Array[4] = {serialRequest[6], serialRequest[7], serialRequest[8]};
+    char param3Array[4] = {serialRequest[9], serialRequest[10], serialRequest[11]};
+  
+    int mode = atoi(modeArray);
+    int param1 = atoi(param1Array);
+    int param2 = atoi(param2Array);
+    int param3 = atoi(param3Array);
+    
+    paramManager(mode, param1, param2, param3);
+  }
+}
+
+void paramManager(int mode, int param1, int param2, int param3) {
+  if (mode == 001 && (param1 || param2 || param3)) {
+    setRgb(param1, param2, param3);
+  }
+
+  inputManager(mode);
 }
 
 void inputManager(char input) {

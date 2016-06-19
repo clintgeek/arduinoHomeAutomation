@@ -3,7 +3,6 @@ void modeManager() {
   
   switch (request) {
     // First Row
-    case 100:
     case 1:
       solidColorMode();
       break;

@@ -19,6 +19,27 @@ void debugPrinter(String title, int value, int blankLines) {
   }
 }
 
+void debugPrinter(String title, char* value, int blankLines) {
+  if (debug) {
+    Serial.print(title);
+
+    int x = 0;
+    while (true) {
+      if (value[x] == '\n') { 
+        Serial.println();
+        break; 
+      } else {
+        Serial.print(value[x]);
+        x++;
+      }
+    }
+    
+    for (int i=0; i < blankLines; i++) {
+      Serial.println();
+    }
+  }
+}
+
 void writeSingleColor(int colorIndex, int brightness) {
   int outPin;
 
@@ -148,7 +169,7 @@ void breatheIn(int color) {
     if (abortNow) { break; }
     rgbColor[color] = brightness;
     rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
-    threadSafeDelay(20);
+    threadSafeDelay(breatheSpeed);
   }
 }
 
@@ -163,7 +184,7 @@ void breatheOut(int color) {
     if (abortNow) { break; }
     rgbColor[color] = brightness;
     rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
-    threadSafeDelay(20);
+    threadSafeDelay(breatheSpeed);
   }
 }
 

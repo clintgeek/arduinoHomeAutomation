@@ -1,12 +1,12 @@
 void powerOnSelfTest() {
   rgb(255, 0, 0);
-  delay(1000);
+  delay(750);
 
   rgb(0, 255, 0);
-  delay(1000);
+  delay(750);
 
   rgb(0, 0, 255);
-  delay(1000);
+  delay(750);
   rgb(0, 0, 0);
 }
 
@@ -14,7 +14,7 @@ void solidColorMode() {
   mode = request;
   while (!abortNow) {
     rgb(rVal, gVal, bVal);
-    threadSafeDelay(50);
+    threadSafeDelay(1);
   }
 }
 
@@ -28,9 +28,11 @@ void breatheMode() {
 }
 
 void allOff() {
-  abortNow = true;
-  mode = request = ' ';
-  rgb(0, 0, 0); // Lights Off
+  mode = request;
+    while (!abortNow) {
+    rgb(0, 0, 0);
+    threadSafeDelay(1);
+  }
 }
 
 void rgbFadeMode() {
@@ -57,7 +59,7 @@ void rgbFadeMode() {
         rgbColor[incColor] += 1;
   
         rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
-        threadSafeDelay(20);
+        threadSafeDelay(breatheSpeed);
       }
     }
   }
@@ -83,7 +85,7 @@ void breathePink() {
     brightness[2] += 1;
 
     rgb(brightness[0], brightness[1], brightness[2]);
-    threadSafeDelay(60);
+    threadSafeDelay(40);
   }
 
   for (int i = 0; i < 50; i++) {
@@ -94,7 +96,7 @@ void breathePink() {
     brightness[2] -= 1;
 
     rgb(brightness[0], brightness[1], brightness[2]);
-    threadSafeDelay(60);
+    threadSafeDelay(40);
   }
 }
 
@@ -109,7 +111,7 @@ void breatheTurquoise() {
     brightness[2] += 4;
 
     rgb(brightness[0], brightness[1], brightness[2]);
-    threadSafeDelay(60);
+    threadSafeDelay(40);
   }
 
   for (int i = 0; i < 50; i++) {
@@ -120,7 +122,7 @@ void breatheTurquoise() {
     brightness[2] -= 4;
 
     rgb(brightness[0], brightness[1], brightness[2]);
-    threadSafeDelay(60);
+    threadSafeDelay(40);
   }
 }
 
@@ -140,7 +142,7 @@ void solidWhiteMode() {
   mode = request;
   while (!abortNow) {
     rgb(255, 197, 143);
-    threadSafeDelay(50);
+    threadSafeDelay(1);
   }
 }
 
@@ -173,7 +175,7 @@ void sunriseMode(int color, int duration) {
   }
  
   while (!abortNow) {
-    threadSafeDelay(10);
+    threadSafeDelay(1);
   }
 }
 
@@ -194,7 +196,7 @@ void sunsetMode(int color, int duration) {
   }
 
   while (!abortNow) {
-    threadSafeDelay(10);
+    threadSafeDelay(1);
   }
 }
 
@@ -206,7 +208,7 @@ void danceMode() {
     int bBrightness = random(0, 255);
 
     rgb(rBrightness, gBrightness, bBrightness);
-    threadSafeDelay(50, 250);
+    threadSafeDelay(100, 500);
   }
 }
 
