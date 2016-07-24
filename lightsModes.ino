@@ -141,7 +141,7 @@ void tvMode() {
 void solidWhiteMode() {
   mode = request;
   while (!abortNow) {
-    rgb(255, 197, 143);
+    rgb(255, 150, 125);
     threadSafeDelay(1);
   }
 }

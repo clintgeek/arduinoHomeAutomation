@@ -84,19 +84,13 @@ void setRgb(int r, int g, int b) {
   setSingleColor(2, b);
 }
 
-void threadSafeDelay(int duration) {
-  for (int delayCounter = 0; delayCounter < duration; delayCounter++) {
-    inputWatcher();
-    if (!abortNow) {
-      delay(1);
-    }
-  }
-}
-
 void threadSafeDelay(int min, int max) {
   int totalDelay = random(min, max);
+  threadSafeDelay(totalDelay);
+}
 
-  for (int delayCounter = 0; delayCounter < totalDelay; delayCounter++) {
+void threadSafeDelay(int duration) {
+  for (int delayCounter = 0; delayCounter < duration; delayCounter++) {
     inputWatcher();
     if (!abortNow) {
       delay(1);
@@ -186,5 +180,23 @@ void breatheOut(int color) {
     rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
     threadSafeDelay(breatheSpeed);
   }
+}
+
+void sendSensorData(int type, int param1) {
+  sendSensorData(type, param1, 0, 0);
+}
+
+void sendSensorData(int type, int param1, int param2) {
+  sendSensorData(type, param1, param2, 0);
+}
+
+void sendSensorData(int type, int param1, int param2, int param3) {
+  payload_environment sensorData;
+
+  sensorData = (payload_environment){ type, param1, param2, param3 };
+
+  RF24NetworkHeader header(pi_node);
+
+  bool ok = network.write(header, &sensorData, sizeof(sensorData));  
 }
 
