@@ -111,8 +111,6 @@ int gVal;
 int bVal;
 int mode;
 int shift;
-int request;
-bool abortNow;
 bool prevTvStatus;
 int breatheSpeed = 40;
 int previousTemperature;
@@ -134,19 +132,17 @@ void setup() {
   }
 
   debugPrinter("Arduino Booting...", 0);
-
+  powerOnSelfTest();
   debugPrinter("My node id is: ", this_node, 0);
   debugPrinter("Have DHT: ", has_dht, 0);
   debugPrinter("Have TV: ", has_tv, 0);
   debugPrinter("Have Key: ", has_key, 0);
-
-  powerOnSelfTest();
-
   debugPrinter("Arduino Ready!", 1);
 }
 
 void loop() {
   inputWatcher();
+  paramManager(mode, 0, 0, 0);
 }
 
 void inputWatcher() {
@@ -199,12 +195,12 @@ void checkTvStatus() {
       prevTvStatus = false;
       debugPrinter("TV Off", 0);
       sendSensorData(2, 0);
-      inputManager(3);
+      paramManager(3, 0, 0, 0);
     } else {
       prevTvStatus = true;
       debugPrinter("TV On", 0);
       sendSensorData(2, 1);
-      inputManager(13);
+      paramManager(25, 0, 0, 0);
     }
   }
 }
@@ -282,7 +278,7 @@ void keypadInputProcessor() {
           break;
         case RELEASED:
           debugPrinter("RELEASED: ", kpd.key[i].kcode + shift, 0);
-          inputManager(kpd.key[i].kcode + shift);
+          paramManager(kpd.key[i].kcode + shift, 0, 0, 0);
           break;
         case IDLE:
           break;
@@ -298,15 +294,6 @@ void paramManager(int mode, int param1, int param2, int param3) {
     setRgb(param1, param2, param3);
   }
 
-  inputManager(mode);
-}
-
-void inputManager(char input) {
-  abortNow = true;
-  request = input;
-
-  debugPrinter("PROCESSED: ", request, 1);
-
-  modeManager();
+  modeManager(mode);
 }
 

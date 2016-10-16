@@ -92,14 +92,11 @@ void threadSafeDelay(int min, int max) {
 void threadSafeDelay(int duration) {
   for (int delayCounter = 0; delayCounter < duration; delayCounter++) {
     inputWatcher();
-    if (!abortNow) {
-      delay(1);
-    }
+    delay(1);
   }
 }
 
 void adjustColor(char color, char direction) {
-  request = mode;
   switch (color) {
     case 'r':
       rVal = adjustBrightness(rVal, direction);
@@ -153,29 +150,27 @@ int primaryColor() {
   return primaryColor;
 }
 
-void breatheIn(int color) {
+void breatheIn(int color, int checkMode) {
   int rgbColor[3];
   rgbColor[0] = 0;
   rgbColor[1] = 0;
   rgbColor[2] = 0;
 
-  for (int brightness = 0; brightness <= 255; brightness++) {
-    if (abortNow) { break; }
+  for (int brightness = 0; (brightness <= 255) && (checkMode == mode) ; brightness++) {
     rgbColor[color] = brightness;
     rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
     threadSafeDelay(breatheSpeed);
   }
 }
 
-void breatheOut(int color) {
+void breatheOut(int color, int checkMode) {
   int rgbColor[3];
   rgbColor[0] = 0;
   rgbColor[1] = 0;
   rgbColor[2] = 0;
   rgbColor[color] = 255;
 
-  for (int brightness = 255; brightness >= 1; brightness--) {
-    if (abortNow) { break; }
+  for (int brightness = 255; (brightness >= 1) && (checkMode == mode); brightness--) {
     rgbColor[color] = brightness;
     rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
     threadSafeDelay(breatheSpeed);

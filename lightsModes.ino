@@ -11,26 +11,21 @@ void powerOnSelfTest() {
 }
 
 void solidColorMode() {
-  mode = request;
   rgb(rVal, gVal, bVal);
 }
 
 void breatheMode() {
-  mode = request;
-  while (!abortNow) {
-    breatheIn(primaryColor());
-    if (abortNow) { break; }
-    breatheOut(primaryColor());
-  }
+  int checkMode = mode;
+  breatheIn(primaryColor(), checkMode);
+  breatheOut(primaryColor(), checkMode);
 }
 
 void allOff() {
-  mode = request;
   rgb(0, 0, 0);
 }
 
 void rgbFadeMode() {
-  mode = request;
+  int checkMode = mode;
   int rgbColor[3];
 
   // Start off with red.
@@ -38,16 +33,13 @@ void rgbFadeMode() {
   rgbColor[1] = 0;
   rgbColor[2] = 0;
 
-  while (!abortNow) {
+  while (checkMode == mode) {
     // Choose the colors to increment and decrement.
-    for (int decColor = 0; decColor < 3; decColor += 1) {
+    for (int decColor = 0; (decColor < 3) && (checkMode == mode); decColor += 1) {
       int incColor = decColor == 2 ? 0 : decColor + 1;
 
-      if (abortNow) { break; }
-
       // cross-fade the two colors.
-      for (int i = 0; i < 255; i += 1) {
-        if (abortNow) { break; }
+      for (int i = 0; (i < 255) && (checkMode == mode); i += 1) {
 
         rgbColor[decColor] -= 1;
         rgbColor[incColor] += 1;
@@ -60,20 +52,15 @@ void rgbFadeMode() {
 }
 
 void pinkTurquoiseBreatheMode() {
-  mode = request;
-  while (!abortNow) {
-    breathePink();
-    if (abortNow) { break; }
-    breatheTurquoise();
-  }
+  int checkMode = mode;
+  breathePink(checkMode);
+  breatheTurquoise(checkMode);
 }
 
-void breathePink() {
+void breathePink(int checkMode) {
   int brightness[3] = {0, 0, 0};
 
-  for (int i = 0; i < 50; i++) {
-    if (abortNow) { break; }
-
+  for (int i = 0; (i < 50) && (checkMode == mode); i++) {
     brightness[0] += 4;
     brightness[1] += 0;
     brightness[2] += 1;
@@ -82,9 +69,7 @@ void breathePink() {
     threadSafeDelay(40);
   }
 
-  for (int i = 0; i < 50; i++) {
-    if (abortNow) { break; }
-
+  for (int i = 0; (i < 50) && (checkMode == mode); i++) {
     brightness[0] -= 4;
     brightness[1] -= 0;
     brightness[2] -= 1;
@@ -94,12 +79,10 @@ void breathePink() {
   }
 }
 
-void breatheTurquoise() {
+void breatheTurquoise(int checkMode) {
   int brightness[3] = {0, 0, 0};
 
-  for (int i = 0; i < 50; i++) {
-    if (abortNow) { break; }
-
+  for (int i = 0; (i < 50) && (checkMode == mode); i++) {
     brightness[0] += 0;
     brightness[1] += 4;
     brightness[2] += 4;
@@ -108,9 +91,7 @@ void breatheTurquoise() {
     threadSafeDelay(40);
   }
 
-  for (int i = 0; i < 50; i++) {
-    if (abortNow) { break; }
-
+  for (int i = 0; (i < 50) && (checkMode == mode); i++) {
     brightness[0] -= 0;
     brightness[1] -= 4;
     brightness[2] -= 4;
@@ -121,40 +102,33 @@ void breatheTurquoise() {
 }
 
 void tvMode() {
-  mode = request;
-  while (!abortNow) {
-    int rBrightness = random(0, 255);
-    int gBrightness = random(0, 255);
-    int bBrightness = random(0, 255);
+  int rBrightness = random(0, 255);
+  int gBrightness = random(0, 255);
+  int bBrightness = random(0, 255);
 
-    rgb(rBrightness, gBrightness, bBrightness);
-    threadSafeDelay(250, 1750);
-  }
+  rgb(rBrightness, gBrightness, bBrightness);
+  threadSafeDelay(250, 1750);
 }
 
 void solidWhiteMode() {
-  mode = request;
   rgb(255, 150, 125);
 }
 
 void ambiLightMode() {
-  mode = request;
   rgb(0, 0, 80);
 }
 
 void rgbBreatheMode() {
-  mode = request;
+  int checkMode = mode;
   int color;
-  while (!abortNow) {
-    for (color = 0; color < 3; color++) {
-      breatheIn(color);
-      if (abortNow) { break; }
-      breatheOut(color);
-    }
+  for (color = 0; color < 3; color++) {
+    breatheIn(color, checkMode);
+    breatheOut(color, checkMode);
   }
 }
 
 void sunriseMode(int color, int duration) {
+  int checkMode = mode;
   int rgbColor[3];
   long fadeInMillis = (duration * 60L * 1000L);
   int delayDuration = fadeInMillis / 255L;
@@ -162,20 +136,15 @@ void sunriseMode(int color, int duration) {
   rgbColor[1] = 0;
   rgbColor[2] = 0;
 
-  for (int brightness = 0; brightness <= 255; brightness++) {
-    if (abortNow) { break; }
-
+  for (int brightness = 0; (brightness <= 255) && (checkMode == mode); brightness++) {
     rgbColor[color] = brightness;
     rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
     threadSafeDelay(delayDuration);
   }
-
-  while (!abortNow) {
-    threadSafeDelay(1);
-  }
 }
 
 void sunsetMode(int color, int duration) {
+  int checkMode = mode;
   int rgbColor[3];
   long fadeInMillis = (duration * 60L * 1000L);
   int delayDuration = fadeInMillis / 255;
@@ -183,28 +152,22 @@ void sunsetMode(int color, int duration) {
   rgbColor[1] = 0;
   rgbColor[2] = 0;
 
-  for (int brightness = 255; brightness >= 0; brightness--) {
-    if (abortNow) { break; }
-
+  for (int brightness = 255; (brightness >= 0) && (checkMode == mode); brightness--) {
     rgbColor[color] = brightness;
     rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
     threadSafeDelay(delayDuration);
   }
 
-  while (!abortNow) {
+  while (true) {
     threadSafeDelay(1);
   }
 }
 
 void danceMode() {
-  mode = request;
-  while (!abortNow) {
-    int rBrightness = random(0, 255);
-    int gBrightness = random(0, 255);
-    int bBrightness = random(0, 255);
-    if (abortNow) { break; }
-    rgb(rBrightness, gBrightness, bBrightness);
-    threadSafeDelay(100, 500);
-  }
+  int rBrightness = random(0, 255);
+  int gBrightness = random(0, 255);
+  int bBrightness = random(0, 255);
+  rgb(rBrightness, gBrightness, bBrightness);
+  threadSafeDelay(100, 500);
 }
 
