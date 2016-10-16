@@ -11,12 +11,13 @@
 #include <Keypad.h>
 
 /////////////////////////////
-// NODE LIST               
+// NODE LIST
 /////////////////////////////
 # define RASPBERRY_PI 00
 # define HOME_OFFICE 01
 # define MASTER_BEDROOM 02
 # define LIVING_ROOM 03
+# define GARAGE_DOOR 04
 /////////////////////////////
 
 /////////////////////////////
@@ -24,15 +25,15 @@
 /////////////////////////////
 //  0: RX
 //  1: TX
-//  2: DHT(2)
+//  2: 
 // *3:
 //  4: KEY(OPT)
-// *5:
+// *5: DHT22
 // *6: BLUE
 //  7: rf24(2)
 //  8: rf24(6)
-// *9: GREEN
-//*10: RED
+// *9: RED
+//*10: GREEN
 //*11: rf24(7)
 // 12: rf24(4)
 // 13: rf24(3)
@@ -53,14 +54,14 @@
 // NODE SPECIFIC CONFIGURATION
 const uint16_t this_node = MASTER_BEDROOM;
 const bool has_dht = true;
-#define DHTTYPE DHT11
-const bool has_key = true;
-const bool has_tv = true;
+#define DHTTYPE DHT22
+const bool has_key = false;
+const bool has_tv = false;
 const bool debug = true;
 
 // Configure RGB Strip
-int const rOutPin = 10;
-int const gOutPin = 9;
+int const gOutPin = 10;
+int const rOutPin = 9;
 int const bOutPin = 6;
 
 // Configure TV Sensor
@@ -69,7 +70,7 @@ unsigned long prevTvCheckMillis = 0;
 unsigned long delayTvCheckMillis = 3000;
 
 // Configure DHT Sensor
-#define DHTPIN 2
+#define DHTPIN 5
 DHT dht(DHTPIN, DHTTYPE);
 unsigned long prevDhtCheckMillis = 0;
 unsigned long delayDhtCheckMillis = 30000;
@@ -122,7 +123,7 @@ void setup() {
   radio.begin();
   network.begin(/*channel*/ 90, /*node address*/ this_node);
   dht.begin();
-  
+
   if (debug) {
     Serial.begin(19200);
     while (!Serial) {
@@ -131,7 +132,7 @@ void setup() {
     Serial.flush();
     delay(1000);
   }
-  
+
   debugPrinter("Arduino Booting...", 0);
 
   debugPrinter("My node id is: ", this_node, 0);
@@ -150,7 +151,6 @@ void loop() {
 
 void inputWatcher() {
   currentMillis = millis();
-
   if (has_dht) { dhtMonitor(); }
   if (has_tv) { checkTvStatus(); }
   
@@ -165,17 +165,17 @@ void dhtMonitor() {
     prevDhtCheckMillis = currentMillis;
     int f = dht.readTemperature(true);
     int h = dht.readHumidity();
-  
+
     // Check if any reads failed and exit early (to try again).
     if (isnan(f) || isnan(h)) {
       debugPrinter("Failed to read from DHT sensor!", 1);
       return;
-    }  
+    }
 
     if (f != previousTemperature || h != previousHumidity) {
       debugPrinter("Temperature(F): ", f, 0);
       debugPrinter("Humidity(%): ", h, 1);
-      
+
       previousTemperature = f;
       previousHumidity = h;
       sendSensorData(1, f, h);
@@ -213,15 +213,15 @@ void networkInputProcessor() {
   while (network.available()) {
     RF24NetworkHeader header;
     payload_command payload;
-    
+
     network.read(header,&payload,sizeof(payload));
-    
-    if (payload.mode) {   
+
+    if (payload.mode) {
       int mode = payload.mode;
       int param1 = payload.param1;
       int param2 = payload.param2;
       int param3 = payload.param3;
-      
+
       debugPrinter("Mode: ", mode, 0);
       debugPrinter("Param1: ", param1, 0);
       debugPrinter("Param2: ", param2, 0);
@@ -235,16 +235,16 @@ void networkInputProcessor() {
 void serialInputProcessor() {
   while (Serial.available()) {
     int i = 0;
-    char serialRequest[13]; 
-    
+    char serialRequest[13];
+
     while (true) {
       char inChar = Serial.read();
-  
+
       if (isDigit(inChar)) {
         serialRequest[i] = inChar;
         i++;
       }
-  
+
       if (inChar == '\n') {
         debugPrinter("serialRequest: ", serialRequest, 1);
         break;
@@ -255,17 +255,17 @@ void serialInputProcessor() {
     char param1Array[4] = {serialRequest[3], serialRequest[4], serialRequest[5]};
     char param2Array[4] = {serialRequest[6], serialRequest[7], serialRequest[8]};
     char param3Array[4] = {serialRequest[9], serialRequest[10], serialRequest[11]};
-  
+
     int mode = atoi(modeArray);
     int param1 = atoi(param1Array);
     int param2 = atoi(param2Array);
     int param3 = atoi(param3Array);
-    
+
     paramManager(mode, param1, param2, param3);
   }
 }
 
-void keypadInputProcessor() {  
+void keypadInputProcessor() {
   for (int i = 0; i < LIST_MAX; i++) // Scan the whole key list.
   {
     if ( kpd.key[i].stateChanged )   // Only find keys that have changed state.
@@ -306,7 +306,7 @@ void inputManager(char input) {
   request = input;
 
   debugPrinter("PROCESSED: ", request, 1);
-  
+
   modeManager();
 }
 

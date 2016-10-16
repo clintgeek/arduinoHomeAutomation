@@ -44,7 +44,7 @@ void modeManager() {
       break;
     // Shifted First Row
     case 13:
-      solidWhiteMode();
+      ambiLightMode();
       break;
     case 14:
       rgbBreatheMode();

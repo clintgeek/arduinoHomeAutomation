@@ -25,15 +25,15 @@ void debugPrinter(String title, char* value, int blankLines) {
 
     int x = 0;
     while (true) {
-      if (value[x] == '\n') { 
+      if (value[x] == '\n') {
         Serial.println();
-        break; 
+        break;
       } else {
         Serial.print(value[x]);
         x++;
       }
     }
-    
+
     for (int i=0; i < blankLines; i++) {
       Serial.println();
     }
@@ -197,6 +197,10 @@ void sendSensorData(int type, int param1, int param2, int param3) {
 
   RF24NetworkHeader header(pi_node);
 
-  bool ok = network.write(header, &sensorData, sizeof(sensorData));  
+  bool ok = network.write(header, &sensorData, sizeof(sensorData));
+  if (ok) {
+    debugPrinter("Sensor data sent!", 1);
+  } else {
+    debugPrinter("Sensor data send failed!", 1);
+  }
 }
-
