@@ -25,7 +25,7 @@
 /////////////////////////////
 //  0: RX
 //  1: TX
-//  2: 
+//  2:
 // *3:
 //  4: KEY(OPT)
 // *5: DHT22
@@ -54,9 +54,9 @@
 // NODE SPECIFIC CONFIGURATION
 const uint16_t this_node = MASTER_BEDROOM;
 const bool has_dht = true;
-#define DHTTYPE DHT22
+#define DHTTYPE DHT11
 const bool has_key = false;
-const bool has_tv = false;
+const bool has_tv = true;
 const bool debug = true;
 
 // Configure RGB Strip
@@ -142,14 +142,14 @@ void setup() {
 
 void loop() {
   inputWatcher();
-  paramManager(mode, 0, 0, 0);
+  inputManager(mode);
 }
 
 void inputWatcher() {
   currentMillis = millis();
   if (has_dht) { dhtMonitor(); }
   if (has_tv) { checkTvStatus(); }
-  
+
   network.update();
   if (network.available()) { networkInputProcessor(); }
   if (Serial.available()) { serialInputProcessor(); }
@@ -183,24 +183,23 @@ void dhtMonitor() {
 
 void checkTvStatus() {
   if (currentMillis - prevTvCheckMillis >= delayTvCheckMillis) {
-    int tv_sensor_level = analogRead(TV_SENSOR);
-
-    if (tv_sensor_level > 700) { debugPrinter("TV Sensor: ", tv_sensor_level, 1); }
-
     prevTvCheckMillis = currentMillis;
+
+    int tv_sensor_level = analogRead(TV_SENSOR);
+    if (tv_sensor_level > 700 && prevTvStatus == false) {
+      debugPrinter("TV Sensor: ", tv_sensor_level, 1);
+    }
+
     bool currentTvStatus = (tv_sensor_level == 1023);
-    if (prevTvStatus == currentTvStatus) {
-      return;
-    } else if (prevTvStatus == true) {
-      prevTvStatus = false;
-      debugPrinter("TV Off", 0);
-      sendSensorData(2, 0);
-      paramManager(3, 0, 0, 0);
-    } else {
-      prevTvStatus = true;
-      debugPrinter("TV On", 0);
-      sendSensorData(2, 1);
-      paramManager(25, 0, 0, 0);
+    if (prevTvStatus != currentTvStatus) {
+      prevTvStatus = currentTvStatus;
+      debugPrinter("TV is: ", currentTvStatus, 0);
+      sendSensorData(2, currentTvStatus);
+      if(currentTvStatus) {
+        inputManager(25);
+      } else {
+        biasFadeOutMode();
+      }
     }
   }
 }
@@ -219,19 +218,22 @@ void networkInputProcessor() {
       int param3 = payload.param3;
 
       debugPrinter("Mode: ", mode, 0);
-      debugPrinter("Param1: ", param1, 0);
-      debugPrinter("Param2: ", param2, 0);
-      debugPrinter("Param3: ", param3, 0);
+      if (param1 || param2 || param3) {
+        debugPrinter("Param1: ", param1, 0);
+        debugPrinter("Param2: ", param2, 0);
+        debugPrinter("Param3: ", param3, 0);
+      }
 
-      paramManager(mode, param1, param2, param3);
+      inputManager(mode, param1, param2, param3);
     }
   }
 }
 
 void serialInputProcessor() {
+  char serialRequest[13] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
   while (Serial.available()) {
     int i = 0;
-    char serialRequest[13];
 
     while (true) {
       char inChar = Serial.read();
@@ -242,6 +244,8 @@ void serialInputProcessor() {
       }
 
       if (inChar == '\n') {
+        serialRequest[13] = inChar;
+        Serial.flush();
         debugPrinter("serialRequest: ", serialRequest, 1);
         break;
       }
@@ -257,7 +261,14 @@ void serialInputProcessor() {
     int param2 = atoi(param2Array);
     int param3 = atoi(param3Array);
 
-    paramManager(mode, param1, param2, param3);
+    debugPrinter("Mode: ", mode, 0);
+    if (param1 || param2 || param3) {
+      debugPrinter("Param1: ", param1, 0);
+      debugPrinter("Param2: ", param2, 0);
+      debugPrinter("Param3: ", param3, 0);
+    }
+
+    inputManager(mode, param1, param2, param3);
   }
 }
 
@@ -278,7 +289,7 @@ void keypadInputProcessor() {
           break;
         case RELEASED:
           debugPrinter("RELEASED: ", kpd.key[i].kcode + shift, 0);
-          paramManager(kpd.key[i].kcode + shift, 0, 0, 0);
+          inputManager(kpd.key[i].kcode + shift);
           break;
         case IDLE:
           break;
@@ -289,8 +300,12 @@ void keypadInputProcessor() {
   }
 }
 
-void paramManager(int mode, int param1, int param2, int param3) {
-  if (mode == 001 && (param1 || param2 || param3)) {
+void inputManager(int mode) {
+  inputManager(mode, 0, 0, 0);
+}
+
+void inputManager(int mode, int param1, int param2, int param3) {
+  if ((mode == 001 || mode == 101) && (param1 || param2 || param3)) {
     setRgb(param1, param2, param3);
   }
 

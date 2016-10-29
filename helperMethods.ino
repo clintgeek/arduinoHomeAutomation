@@ -84,6 +84,19 @@ void setRgb(int r, int g, int b) {
   setSingleColor(2, b);
 }
 
+void setMode(int modeToSet) {  
+  if (modeToSet != mode) { 
+    if (mode == 118) {
+      sendSecondaryCommand(HOME_OFFICE, 003, 0, 0, 0);
+    }
+
+    mode = modeToSet;
+    if (mode != 101) {
+      sendSensorData(6, mode);
+    }
+  }
+}
+
 void threadSafeDelay(int min, int max) {
   int totalDelay = random(min, max);
   threadSafeDelay(totalDelay);
@@ -151,29 +164,35 @@ int primaryColor() {
 }
 
 void breatheIn(int color, int checkMode) {
+  breatheIn(color, checkMode, 255, breatheSpeed);
+}
+void breatheIn(int color, int checkMode, int endBrightness, int transitionSpeed) {
   int rgbColor[3];
   rgbColor[0] = 0;
   rgbColor[1] = 0;
   rgbColor[2] = 0;
 
-  for (int brightness = 0; (brightness <= 255) && (checkMode == mode) ; brightness++) {
+  for (int brightness = 0; (brightness <= endBrightness) && (checkMode == mode) ; brightness++) {
     rgbColor[color] = brightness;
     rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
-    threadSafeDelay(breatheSpeed);
+    threadSafeDelay(transitionSpeed);
   }
 }
 
 void breatheOut(int color, int checkMode) {
+  breatheOut(color, checkMode, 255, breatheSpeed);
+}
+void breatheOut(int color, int checkMode, int startBrightness, int transitionSpeed) {
   int rgbColor[3];
   rgbColor[0] = 0;
   rgbColor[1] = 0;
   rgbColor[2] = 0;
-  rgbColor[color] = 255;
+  rgbColor[color] = startBrightness;
 
-  for (int brightness = 255; (brightness >= 1) && (checkMode == mode); brightness--) {
+  for (int brightness = startBrightness; (brightness >= 1) && (checkMode == mode); brightness--) {
     rgbColor[color] = brightness;
     rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
-    threadSafeDelay(breatheSpeed);
+    threadSafeDelay(transitionSpeed);
   }
 }
 
@@ -197,5 +216,20 @@ void sendSensorData(int type, int param1, int param2, int param3) {
     debugPrinter("Sensor data sent!", 1);
   } else {
     debugPrinter("Sensor data send failed!", 1);
+  }
+}
+
+void sendSecondaryCommand(int secondaryNode, int type, int param1, int param2, int param3) {
+  payload_command secondaryCommand;
+
+  secondaryCommand = (payload_command){ mode, param1, param2, param3 };
+
+  RF24NetworkHeader header(secondaryNode);
+
+  bool ok = network.write(header, &secondaryCommand, sizeof(secondaryCommand));
+  if (ok) {
+    debugPrinter("Secondary command sent!", 1);
+  } else {
+    debugPrinter("Secondary command failed!", 1);
   }
 }

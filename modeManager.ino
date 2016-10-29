@@ -2,28 +2,28 @@ void modeManager(int request) {
   switch (request) {
     // First Row
     case 1:
-      mode = request;
+      setMode(request);
       solidColorMode();
       break;
     case 2:
-      mode = request;
+      setMode(request);
       breatheMode();
       break;
     case 3:
-      mode = request;
+      setMode(request);
       allOff();
       break;
     // Second Row
     case 4:
-      mode = request;
+      setMode(request);
       rgbFadeMode();
       break;
     case 5:
-      mode = request;
+      setMode(request);
       pinkTurquoiseBreatheMode();
       break;
     case 6:
-      mode = request;
+      setMode(request);
       tvMode();
       break;
     // Third Row
@@ -48,26 +48,26 @@ void modeManager(int request) {
       break;
     // Shifted First Row
     case 13:
-      mode = request;
+      setMode(request);
       solidWhiteMode();
       break;
     case 14:
-      mode = request;
+      setMode(request);
       rgbBreatheMode();
       break;
     case 15:
       break;
     // Shifted Second Row
     case 16:
-      mode = request;
+      setMode(request);
       sunriseMode(2, 5);
       break;
     case 17:
-      mode = request;
+      setMode(request);
       sunsetMode(0, 5);
       break;
     case 18:
-      mode = request;
+      setMode(request);
       danceMode();
       break;
     // Shifted Third Row
@@ -92,7 +92,23 @@ void modeManager(int request) {
       break;
     // Other Modes
     case 25:
-      ambiLightMode();
+      setMode(request);
+      biasLightMode();
       break;
+    case 26:
+      setMode(request);
+      solidBlueMode();
+      break;
+    case 27:
+      setMode(request);
+      nightVisionMode();
+      break;
+    case 101:
+      setMode(request);
+      solidColorMode();
+      break;
+    case 118:
+      setMode(request);
+      allMbDanceMode();
   }
 }

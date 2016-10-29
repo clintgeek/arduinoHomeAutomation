@@ -10,6 +10,27 @@ void powerOnSelfTest() {
   rgb(0, 0, 0);
 }
 
+void solidWhiteMode() {
+  rgb(255, 150, 125);
+}
+
+void biasLightMode() {
+  rgb(0, 0, 80);
+}
+
+void biasFadeOutMode() {
+  breatheOut(2, 25, 80, 2);
+  modeManager(3);
+}
+
+void solidBlueMode() {
+  rgb(0, 0, 255);
+}
+
+void nightVisionMode() {
+  rgb(126, 0, 0);
+}
+
 void solidColorMode() {
   rgb(rVal, gVal, bVal);
 }
@@ -110,14 +131,6 @@ void tvMode() {
   threadSafeDelay(250, 1750);
 }
 
-void solidWhiteMode() {
-  rgb(255, 150, 125);
-}
-
-void ambiLightMode() {
-  rgb(0, 0, 80);
-}
-
 void rgbBreatheMode() {
   int checkMode = mode;
   int color;
@@ -129,38 +142,20 @@ void rgbBreatheMode() {
 
 void sunriseMode(int color, int duration) {
   int checkMode = mode;
-  int rgbColor[3];
   long fadeInMillis = (duration * 60L * 1000L);
   int delayDuration = fadeInMillis / 255L;
-  rgbColor[0] = 0;
-  rgbColor[1] = 0;
-  rgbColor[2] = 0;
 
-  for (int brightness = 0; (brightness <= 255) && (checkMode == mode); brightness++) {
-    rgbColor[color] = brightness;
-    rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
-    threadSafeDelay(delayDuration);
-  }
+  breatheIn(color, checkMode, 255, delayDuration);
+  modeManager(26);
 }
 
 void sunsetMode(int color, int duration) {
   int checkMode = mode;
-  int rgbColor[3];
   long fadeInMillis = (duration * 60L * 1000L);
   int delayDuration = fadeInMillis / 255;
-  rgbColor[0] = 0;
-  rgbColor[1] = 0;
-  rgbColor[2] = 0;
 
-  for (int brightness = 255; (brightness >= 0) && (checkMode == mode); brightness--) {
-    rgbColor[color] = brightness;
-    rgb(rgbColor[0], rgbColor[1], rgbColor[2]);
-    threadSafeDelay(delayDuration);
-  }
-
-  while (true) {
-    threadSafeDelay(1);
-  }
+  breatheOut(color, checkMode, 255, delayDuration);
+  modeManager(3);
 }
 
 void danceMode() {
@@ -171,3 +166,11 @@ void danceMode() {
   threadSafeDelay(100, 500);
 }
 
+void allMbDanceMode() {
+  int rBrightness = random(0, 255);
+  int gBrightness = random(0, 255);
+  int bBrightness = random(0, 255);
+  rgb(rBrightness, gBrightness, bBrightness);
+  sendSecondaryCommand(HOME_OFFICE, 101, rBrightness, gBrightness, bBrightness);
+  threadSafeDelay(100, 500);
+}
